@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
 
@@ -10,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json()); // allow us to parse json bodies in requests
+app.use(cookieParser()); // allow us to parse cookies in requests
 
 app.use("/api/auth", authRouter);
 
