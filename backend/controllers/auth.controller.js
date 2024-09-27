@@ -1,5 +1,11 @@
 import bcryptjs from "bcryptjs";
-import { sendVerificationEmail, sendWelcomeEmail } from "../mailtrap/emails.js";
+import crypto from "crypto";
+import {
+  sendPasswordResetSuccessEmail,
+  sendResetPasswordEmail,
+  sendVerificationEmail,
+  sendWelcomeEmail,
+} from "../mailtrap/emails.js";
 import User from "../models/user.model.js";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
 import { generateVerificationToken } from "../utils/generateVerificationToken.js";
@@ -104,7 +110,52 @@ export const verifyEmail = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  res.send("Login");
+  const { email, password } = req.body;
+  try {
+    // validate the input
+    if (!email || !password) {
+      throw new Error("All fields are required");
+    }
+
+    // check if the user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User does not exist",
+      });
+    }
+
+    // check if the password is correct
+    const isPasswordCorrect = await bcryptjs.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect password",
+      });
+    }
+
+    // generate a JWT token
+    generateTokenAndSetCookie(res, user._id);
+
+    user.lastLoginDate = new Date();
+    await user.save();
+
+    // send the response
+    res.status(200).json({
+      success: true,
+      message: "Logged in successfully",
+      user: {
+        ...user._doc,
+        password: undefined,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 export const logout = async (req, res) => {
@@ -113,4 +164,81 @@ export const logout = async (req, res) => {
     success: true,
     message: "Logged out successfully",
   });
+};
+
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User does not exist",
+      });
+    }
+
+    // generate a reset password token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetPasswordExpiresAt = new Date(Date.now() + 1000 * 60 * 60 * 1); // 1 hour
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpiresAt = resetPasswordExpiresAt;
+    await user.save();
+
+    await sendResetPasswordEmail(
+      user.email,
+      `${process.env.FRONTEND_URL}/reset-password/${resetToken}`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Reset password email sent to your email!",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    // check if the token is valid
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpiresAt: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset password token",
+      });
+    }
+
+    // hash the password
+    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    // update the user's password
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiresAt = undefined;
+    await user.save();
+
+    await sendPasswordResetSuccessEmail(user.email);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully!",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
