@@ -67,11 +67,11 @@ export const signup = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-  const { code } = req.body;
+  const { verifyCode } = req.body;
   try {
     // check if the code is valid
     const user = await User.findOne({
-      verificationToken: code,
+      verificationToken: verifyCode,
       verificationExpiresAt: { $gt: Date.now() },
     });
 
@@ -204,12 +204,12 @@ export const forgotPassword = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { token } = req.params;
-    const { password } = req.body;
+    const { resetToken } = req.params;
+    const { newPassword } = req.body;
 
     // check if the token is valid
     const user = await User.findOne({
-      resetPasswordToken: token,
+      resetPasswordToken: resetToken,
       resetPasswordExpiresAt: { $gt: Date.now() },
     });
 
@@ -221,7 +221,7 @@ export const resetPassword = async (req, res) => {
     }
 
     // hash the password
-    const hashedPassword = await bcryptjs.hash(password, 10);
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
 
     // update the user's password
     user.password = hashedPassword;
