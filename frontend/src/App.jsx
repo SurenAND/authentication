@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes } from "react-router-dom";
 import FloatingShape from "./components/FloatingShape";
+import LoadingSpinner from "./components/LoadingSpinner";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import { useAuthStore } from "./store/authStore";
@@ -17,6 +19,14 @@ const RedirectAuthenticatedUser = ({ children }) => {
 };
 
 function App() {
+  const { isCheckingAuth, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  if (isCheckingAuth) return <LoadingSpinner />;
+
   return (
     <div
       className="min-h-screen bg-gradient-to-br
