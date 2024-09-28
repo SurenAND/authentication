@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import FloatingShape from "./components/FloatingShape";
 import SignUpPage from "./pages/SignUpPage";
 import { useAuthStore } from "./store/authStore";
+import LoginPage from "./pages/LoginPage";
 
 // redirect authenticated users to the home page
 const RedirectAuthenticatedUser = ({ children }) => {
@@ -48,6 +49,14 @@ function App() {
           element={
             <RedirectAuthenticatedUser>
               <SignUpPage />
+            </RedirectAuthenticatedUser>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <RedirectAuthenticatedUser>
+              <LoginPage />
             </RedirectAuthenticatedUser>
           }
         />
