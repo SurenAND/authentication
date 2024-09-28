@@ -1,4 +1,18 @@
+import { Navigate, Route, Routes } from "react-router-dom";
 import FloatingShape from "./components/FloatingShape";
+import SignUpPage from "./pages/SignUpPage";
+import { useAuthStore } from "./store/authStore";
+
+// redirect authenticated users to the home page
+const RedirectAuthenticatedUser = ({ children }) => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (isAuthenticated && user.isVerified) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
 
 function App() {
   return (
@@ -27,6 +41,17 @@ function App() {
         left="-10%"
         delay={2}
       />
+
+      <Routes>
+        <Route
+          path="/signup"
+          element={
+            <RedirectAuthenticatedUser>
+              <SignUpPage />
+            </RedirectAuthenticatedUser>
+          }
+        />
+      </Routes>
     </div>
   );
 }
