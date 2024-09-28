@@ -1,3 +1,4 @@
+import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes } from "react-router-dom";
 import FloatingShape from "./components/FloatingShape";
 import LoginPage from "./pages/LoginPage";
@@ -62,6 +63,7 @@ function App() {
         />
         <Route path="/verify-email" element={<EmailVerificationPage />} />
       </Routes>
+      <Toaster />
     </div>
   );
 }
